@@ -1,0 +1,168 @@
+#!/bin/bash
+
+rootDir=""
+cli=$@
+
+while [[ $# > 0 ]]
+do
+    key="$1"
+    case $key in
+        -C|--clean)
+        cInst="$1"
+            nextArg="$2"
+            while ! [[ "$nextArg" =~ -.* ]] && [[ $# > 1 ]]; do
+                case $nextArg in
+        *)
+            ins="$ins $nextArg"
+    ;;
+    esac
+        if ! [[ "$2" =~ -.* ]]; then
+            shift
+            nextArg="$2"
+        else
+            shift
+            break
+        fi
+        done
+    ;;
+        -I|--install)
+        cInst="$1"
+            nextArg="$2"
+            while ! [[ "$nextArg" =~ -.* ]] && [[ $# > 1 ]]; do
+                case $nextArg in
+        *)
+            ins="$ins $nextArg"
+    ;;
+    esac
+        if ! [[ "$2" =~ -.* ]]; then
+            shift
+            nextArg="$2"
+        else
+            shift
+            break
+        fi
+        done
+    ;;
+        -h|--host)
+        Host="$1"
+            nextArg="$2"
+            while ! [[ "$nextArg" =~ -.* ]] && [[ $# > 1 ]]; do
+                case $nextArg in
+        *)
+            vHost="$nextArg"
+    ;;
+    esac
+        if ! [[ "$2" =~ -.* ]]; then
+            shift
+            nextArg="$2"
+        else
+            shift
+            break
+        fi
+        done
+    ;;
+        -d|--Dir)
+        iDir="$1"
+            nextArg="$2"
+            while ! [[ "$nextArg" =~ -.* ]] && [[ $# > 1 ]]; do
+                case $nextArg in
+            #instDir="$nextArg"
+        *)
+            instDir="$nextArg"
+    ;;
+    esac
+        if ! [[ "$2" =~ -.* ]]; then
+            shift
+            nextArg="$2"
+        else
+            shift
+            break
+        fi
+        done
+    ;;
+    *)
+        echo "$key"
+    ;;
+    esac
+    shift
+done
+
+webApp=($(echo $ins | tr ' ' "\n"))
+
+if [ "$instDir" != "" ]; then
+    rootDir=$instDir/htdocs/$webApp
+    else
+    rootDir=/var/www/$vHost/htdocs/$webApp
+fi
+
+if [ $cInst == '-C' ] || $cInst == '--clean' ];
+    then
+    webapp-config $cli
+	a2dissite $vHost.conf
+	echo "$vHost is disabled, please remove $vHost.conf manuel."
+	echo "Remove $vHost from /etc/hosts"
+	sed -i '/127.0.0.1	'"$vHost"'/d' /etc/hosts
+	echo "Installed WebApps:"
+	webapp-config --list-installs -V
+	exit
+fi
+
+# WebApp install	
+webapp-config $cli
+
+# vHost configuraton
+if [ $? -eq 0 ]
+then
+    echo "$webApp for $vHost it installed"
+    echo "Create $vHost.conf for apache"
+### create virtual Host rules file
+if [ ! -f /etc/apache2/sites-available/$vHost.conf ]; then
+    if ! echo "
+<VirtualHost *:80>
+    ServerAdmin admin@$vHost
+    ServerName $vHost
+    ServerAlias $vHost
+    DocumentRoot $rootDir
+    <Directory />
+	AllowOverride All
+    </Directory>
+    <Directory $rootDir>
+Options Indexes FollowSymLinks MultiViews
+	AllowOverride all
+	Require all granted
+    </Directory>
+    ErrorLog /var/log/apache2/$vHost-error.log
+    LogLevel error
+    CustomLog /var/log/apache2/$vHost-access.log combined
+</VirtualHost>" > /etc/apache2/sites-available/$vHost.conf
+
+    then
+        echo -e $"There is an ERROR creating $vHost file"
+        exit
+    else
+        echo -e $"\nNew Virtual Host Created\n"
+    fi
+else
+echo "$vHost.conf exist"
+fi
+### Add domain in /etc/Hosts
+    if ! echo "127.0.0.1	$vHost" >> /etc/hosts
+    then
+        echo $"ERROR: Not able to write in /etc/hosts"
+    exit
+    else
+        echo -e $"Host added to /etc/hosts file \n"
+    fi
+    
+### enable website
+a2ensite $vHost.conf
+    
+else
+    echo "it failed"
+    echo "installed servers:"
+    webapp-config -ls
+    echo "Available unused webapps:"
+    webapp-config --list-unused-installs
+    echo "installed webapps:"
+    webapp-config --list-installs -V
+fi
