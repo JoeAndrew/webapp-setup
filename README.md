@@ -77,3 +77,9 @@ For the scripts to work, you first need to create your virtual host in the /etc/
 The a2ensite script is run with only 1 argument: the name of the virtual-host file. It then links the file to the sites-enabled folder, checks for any syntax errors and restarts your apache.
 
 The a2dissite script disables the virtualhost by removing the link in the sites-enabled folder and restarts apache.
+
+#### to be continued...
+#### to do list
+
+nginx support
+lightdm support
