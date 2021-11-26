@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Enable a site, just like the a2ensite command.
 
 SITES_AVAILABLE_CONFIG_DIR="/etc/apache2/sites-available";
