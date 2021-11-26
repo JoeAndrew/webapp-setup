@@ -14,7 +14,7 @@ eselect repository add joe-overlay git https://github.com/JoeAndrew/joe-overlay
 or clone joe-overlay from https://github.com/JoeAndrew/joe-overlay and add it as custom overlay
 
 ```bash
-$ echo "app-admin/webapp-setup **" >> /etc/portage/accept.keywords/joe-overlay
+$ echo "app-admin/webapp-setup **" >> /etc/portage/package.accept_keywords/joe-overlay
 $ emerge webapp-setup
 ```
 
