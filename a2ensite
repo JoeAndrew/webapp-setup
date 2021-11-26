@@ -1,0 +1,33 @@
+#!/bin/bash
+# Enable a site, just like the a2ensite command.
+
+SITES_AVAILABLE_CONFIG_DIR="/etc/apache2/sites-available";
+SITES_ENABLED_CONFIG_DIR="/etc/apache2/sites-enabled";
+
+if [ $1 ]; then
+  if [ -f "${SITES_ENABLED_CONFIG_DIR}/${1}" ]; then
+    echo "Site ${1} was already enabled!";
+  elif [ ! -w $SITES_ENABLED_CONFIG_DIR ]; then
+    echo "You don't have permission to do this. Try to run the command as root."
+  elif [ -f "${SITES_AVAILABLE_CONFIG_DIR}/${1}" ]; then
+    echo "Enabling site ${1}...";
+    ln -s $SITES_AVAILABLE_CONFIG_DIR/$1 $SITES_ENABLED_CONFIG_DIR/$1
+    # Checking for errors
+    CHECK= $(apache2ctl -f /etc/apache2/httpd.conf -t &2>/dev/null)
+    echo $CHECK
+    if [ $CHECK ! = "Syntax OK" ]; then
+      echo "[!] Syntax check failed!\n";
+      echo "[!] Please run 'apache2ctl -f /etc/apache2/httpd.conf -t' and investigate.\n";
+      echo "[!] Removing the link and exiting...\n";
+      rm /etc/apache2/sites-enabled/$1
+    else
+      echo "systemctl reload apache2"
+      systemctl reload apache2
+      echo "done!"
+    fi
+ else
+   echo "Site not found!"
+fi
+else
+  echo "Usage: a2ensite <VirtualHostName.conf>"
+fi
